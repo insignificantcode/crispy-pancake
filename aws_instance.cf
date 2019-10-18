@@ -1,0 +1,47 @@
+variable "private_key_path" {
+    default = "/home/nh/.ssh/deadkey.pem"
+}
+variable "key_name" {
+    default = "dead key"
+}
+
+provider "aws" {
+    region = "us-west-1"
+}
+
+# set up instance parameters
+resource "aws_instance" "terror instance" {
+    ami           = "ami-00fc224d9834053d6"
+    instance_type = "t2.micro"
+    key_name      = "${var.key_name}"
+
+    tags {
+    Name = "test-env"
+  }
+
+    connection {
+        type        = "ssh"
+        user        = "ec2-user"
+        host        = "${aws_instance.terra-example.public_ip}"
+        private_key = "${file(var.private_key_path)}"
+    }
+
+    provisioner "remote-exec" {
+        inline = [
+          "sudo yum -y install screen"
+        ]
+    }
+}
+
+resource "aws_iam_user" "user" {
+  name = "nh"
+}
+
+resource "aws_iam_user_ssh_key" "user" {
+  username   = "${aws_iam_user.user.name}"
+  encoding   = "SSH"
+  public_key = "[redacted]"
+}
+
+output "aws_instance_public_dns" {
+    value = "${aws_instance.terra-example.public_dns}"
